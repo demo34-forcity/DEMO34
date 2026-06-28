@@ -454,6 +454,12 @@
     .final-sub{font-size:13px;letter-spacing:.35em;color:rgba(0,255,136,.45);
       position:relative;z-index:1;animation:fadeU .6s .6s both;}
 
+    /* ── BACK BUTTON ── */
+    .back-btn{display:inline-block;margin-bottom:24px;background:none;border:1px solid rgba(0,229,255,.3);
+      color:rgba(0,229,255,.6);font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+      padding:6px 14px;cursor:pointer;transition:all .2s;}
+    .back-btn:hover{border-color:rgba(0,229,255,.7);color:#00e5ff;}
+
     /* ── UTILS ── */
     @keyframes fadeU{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}
@@ -647,6 +653,7 @@
 
 <!-- PHASE 2 -->
 <div id="phase2-screen" class="hidden">
+  <button class="back-btn" onclick="window._goBack('phase2')">← НАЗАД</button>
   <div class="access-title" style="color:var(--red);text-shadow:var(--glow-r)">⚠ НОВЫЙ ЭТАП</div>
   <div class="p2-msg" id="p2-message"></div>
   <div class="p2-block">
@@ -662,6 +669,7 @@
 
 <!-- PHASE 3 -->
 <div id="phase3-screen" class="hidden">
+  <button class="back-btn" onclick="window._goBack('phase3')">← НАЗАД</button>
   <div class="p3-title">🎯 ТЫ СМОГ ВСПОМНИТЬ!</div>
   <div class="p3-sub">ВВЕДИ ОТВЕТЫ НА ЧЕТЫРЕ ВОПРОСА</div>
   <div class="p3-list" id="p3-list"></div>
@@ -671,8 +679,10 @@
 
 <!-- FINAL -->
 <div id="final-screen" class="hidden">
-  <div class="final-date" id="final-date"></div>
-  <div class="final-sub">// ДАТА РАСКРЫТА //</div>
+  <canvas id="matrix-canvas" style="position:fixed;inset:0;z-index:0;opacity:0;transition:opacity 1.5s;pointer-events:none;"></canvas>
+  <button class="back-btn" onclick="window._goBack('final')" style="position:fixed;top:18px;left:18px;z-index:100000;">← НАЗАД</button>
+  <div class="final-date" id="final-date" style="position:relative;z-index:2;"></div>
+  <div class="final-sub" style="position:relative;z-index:2;">// ДАТА РАСКРЫТА //</div>
 
   <!-- VIDEO BLOCK -->
   <div style="margin-top:48px;text-align:center;">
@@ -1203,8 +1213,40 @@ function _showFinal(){
   const sc=document.getElementById("final-screen");
   document.getElementById("final-date").textContent=_dat.phase2.final_date;
   sc.classList.remove("hidden");sc.style.opacity="0";sc.style.transition="opacity 1.2s";
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{sc.style.opacity="1";}));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{sc.style.opacity="1";_startMatrix();}));
 }
+
+function _startMatrix(){
+  const cv=document.getElementById("matrix-canvas");
+  if(!cv||cv._running)return;cv._running=true;
+  cv.style.opacity="0.38";
+  const cx=cv.getContext("2d");
+  function rsz(){cv.width=innerWidth;cv.height=innerHeight;}
+  rsz();addEventListener("resize",rsz);
+  const cols=Math.floor(innerWidth/16)||50;
+  const drops=Array.from({length:cols},()=>Math.random()*-100|0);
+  const chars="アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF#@!%&";
+  setInterval(()=>{
+    cx.fillStyle="rgba(0,0,0,0.05)";cx.fillRect(0,0,cv.width,cv.height);
+    cx.font="14px monospace";
+    for(let i=0;i<cols;i++){
+      const bright=Math.random()>.97;
+      cx.fillStyle=bright?"#fff":"#00ff41";cx.shadowColor="#00ff41";cx.shadowBlur=bright?8:0;
+      cx.fillText(chars[Math.random()*chars.length|0],i*16,drops[i]*16);
+      if(drops[i]*16>cv.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    }
+  },45);
+}
+
+function _goBack(from){
+  const hide=id=>{const el=document.getElementById(id);el.classList.add("hidden");el.style.opacity="";};
+  const show=id=>{const el=document.getElementById(id);el.classList.remove("hidden");el.style.opacity="0";el.style.transition="opacity .6s";requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.opacity="1";}));};
+  if(from==="phase2"){hide("phase2-screen");show("access-screen");}
+  if(from==="phase3"){hide("phase3-screen");show("phase2-screen");}
+  if(from==="final"){hide("final-screen");show("phase3-screen");}
+}
+window._goBack=_goBack;
 
 function _logout(){
   ["access-screen","phase2-screen","phase3-screen","final-screen"].forEach(id=>{
@@ -1298,7 +1340,8 @@ window._p2c=_p2check;
 window._p3c=_p3check;
 })();
 </script>
-<!-- SECRET OVERLAY -->
+</body>
+</html>
 <div id="secret-overlay" style="
   display:none;position:fixed;inset:0;z-index:999999;
   background:rgba(0,0,0,0.0);
@@ -1337,6 +1380,18 @@ window._p3c=_p3check;
 }
 </style>
 
+<!-- SECRET OVERLAY 2 — фото по тройному клику на ? -->
+<div id="secret-overlay-2" style="
+  display:none;position:fixed;inset:0;z-index:999998;
+  align-items:center;justify-content:center;cursor:pointer;
+">
+  <div style="position:absolute;inset:0;overflow:hidden;">
+    <img src="IMG_0684.JPG" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.7) saturate(0.85);">
+  </div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.3),rgba(0,0,0,.05),rgba(0,0,0,.4));"></div>
+  <div style="position:absolute;bottom:28px;font-family:monospace;font-size:11px;letter-spacing:.3em;color:rgba(255,255,255,.25);z-index:2;">// нажми чтобы закрыть //</div>
+</div>
+
 <script>
 (function(){
   const overlay=document.getElementById("secret-overlay");
@@ -1362,6 +1417,33 @@ window._p3c=_p3check;
     openSecret();
   });
   overlay.addEventListener("click",closeSecret);
+
+  // Тройной клик на вопросительный знак
+  const overlay2=document.getElementById("secret-overlay-2");
+  function openSecret2(){
+    overlay2.style.display="flex";
+    overlay2.style.opacity="0";
+    overlay2.style.transition="opacity .6s";
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{overlay2.style.opacity="1";}));
+  }
+  function closeSecret2(){
+    overlay2.style.opacity="0";
+    setTimeout(()=>{overlay2.style.display="none";},600);
+  }
+  overlay2.addEventListener("click",closeSecret2);
+
+  let clickCount=0,clickTimer=null;
+  const qmEl=document.getElementById("gq-main");
+  if(qmEl){
+    qmEl.style.cursor="pointer";
+    qmEl.addEventListener("click",function(e){
+      e.stopPropagation();
+      clickCount++;
+      clearTimeout(clickTimer);
+      clickTimer=setTimeout(()=>{clickCount=0;},800);
+      if(clickCount>=3){clickCount=0;clearTimeout(clickTimer);openSecret2();}
+    });
+  }
 })();
 </script>
 </body>
